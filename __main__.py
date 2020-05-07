@@ -10,14 +10,14 @@ class Root(tk.Tk):
 
         container = tk.Frame(self)
         container.pack(side='top', fill='both', expand=True)
-        container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
+        container.grid_rowconfigure(0, weight=1)
 
         self._frames = {}
 
         for F in PAGES:
             frame = F(container, self)
-            frame.grid(row=0, column=0, sticky='nsew')
+            frame.grid(row=0, column=0, sticky='snew')
             self._frames[F] = frame
             
         self.set_frame(START_FRAME)
