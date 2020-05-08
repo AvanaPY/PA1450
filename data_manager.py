@@ -6,8 +6,9 @@ CSV_SEPARATOR = ';'
 
 WEATHER_DATA_PATH = './weatherdata'
 WEATHER_PAIRS = {
-    'airtemp': 'airtemp.csv',
-    'precip': 'precip.csv'
+    'airtemp': ('airtemp.csv', 'C'),
+    'precip': ('precip.csv', 'mm'),
+    'airwind': ('airwind.csv', 'm/s')
 }
 
 def load_data(data):
@@ -16,7 +17,8 @@ def load_data(data):
 
         Loads and returns a pandas dataframe of a given type of data.
     """
-    path = f'{WEATHER_DATA_PATH}/{WEATHER_PAIRS[data]}'
+    f, unit = WEATHER_PAIRS[data]
+    path = f'{WEATHER_DATA_PATH}/{f}'
     df = pd.read_csv(path, sep=CSV_SEPARATOR)
     
     df[['Year', 'Month', 'Day']] = df['Datum'].str.split('-', expand=True)
@@ -39,7 +41,7 @@ def load_data(data):
     # Reorganize the labels, the first label in the dataframe with dropped labels will be the "value" we are looking for
     # This is most likely a temporary step as it won't matter later on when we visualize the data as a graph
     df = df[['Year', 'Month', 'Day', 'Hour', 'Date', 'Whole', df.columns[0]]]
-    return df
+    return df, unit
 
 def get_interval(df: pd.DataFrame, min_time: datetime.datetime, max_time: datetime.datetime):
     """
