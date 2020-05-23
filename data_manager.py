@@ -35,11 +35,9 @@ def load_data(data):
     df['Date']      = df[['Year', 'Month', 'Day', 'Hour']].agg(lambda a: ':'.join([str(v) for v in a]), axis=1)
     # Drop the labels we aren't going to use
     df = df.drop(labels=['Tid (UTC)', 'Datum'], axis=1)
+    # Rename the label that contains the original data into Value, this column is first as it is originally third but we dropped the labels before it
+    # Renaming it since it has a completely "random" name otherwise.
     df = df.rename(columns={df.columns[0]: 'Value'})
-
-    # Reorganize the labels, the first label in the dataframe with dropped labels will be the "value" we are looking for
-    # This is most likely a temporary step as it won't matter later on when we visualize the data as a graph
-    df = df[['Year', 'Month', 'Day', 'Hour', 'Date', 'Timestamp', df.columns[0]]]
     return df, unit
 
 def get_interval(df: pd.DataFrame, min_time: datetime.datetime, max_time: datetime.datetime):

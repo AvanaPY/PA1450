@@ -50,13 +50,6 @@ class GraphPage(tk.Frame):
             _resize.add_command(label=size, command=self.ResizeCommand(controller, size))
         menu.add_cascade(label='Resize', menu=_resize)
 
-        # Attribute related
-
-        _attributes = tk.Menu(menu)
-        for data_name in data_manager.WEATHER_PAIRS:
-            _attributes.add_command(label=data_name, command=self.LoadDataCommand(self, data_name))
-        menu.add_cascade(label='Attributes', menu=_attributes)
-
         label = tk.Label(self, text='Graphing data', bg='white', font=BIG_FONT)
         label.pack()
 
@@ -86,33 +79,50 @@ class GraphPage(tk.Frame):
 
         interval_frame.pack(side=tk.TOP, expand=False, pady=20)
 
-        graph_frame = tk.Frame(self, bg='white')
+        # Attribute related
+
+        self._attribute_boxes = {}
+        _attributes = tk.Frame(self, bg='white')
+        for attribute in data_manager.WEATHER_PAIRS:
+            variable = tk.StringVar(_attributes)
+            variable.set('0')
+            chckbtn = tk.Checkbutton(_attributes, text=attribute, variable=variable, bg='white',
+                                    anchor=tk.W, highlightbackground="red", highlightcolor="red", highlightthickness=1)
+            chckbtn.pack(side=tk.TOP, anchor=tk.W, fill=tk.X, expand=True)
+
+            self._attribute_boxes[attribute] = variable
+
+        _graph_button = tk.Button(self, text='Graph it', command=self.graph, width=45, height=2)
+        _graph_button.pack(side=tk.TOP)
+        _attributes.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.W, expand=False)
 
         self._figure = Figure(figsize=(5, 5), dpi=100)
         self._plot = self._figure.add_subplot(111)
-        self._plot.set_title('Graph')
 
-        self._graph_canvas = FigureCanvasTkAgg(self._figure, graph_frame)
+        self._graph_canvas = FigureCanvasTkAgg(self._figure, self)
         self._graph_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        graph_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+    def graph(self):
+        interval = self.get_interval()
+        data = []
+        for attr, v in self._attribute_boxes.items():
+            if v.get() == '1':
+                d, u = data_manager.load_data(attr)
+                d = data_manager.get_interval(d, interval[0], interval[1])
+                data.append((d, attr, u))
+        if data:
+            self._plot.clear()
+
+            self._plot.set_xlabel('Date')
+            self._plot.set_ylabel('Value', rotation=90)
 
 
-    def plot_data(self, dataframe, label, unit, color='red'):
-
-        count = dataframe.shape[0]
-        self._plot.clear()
-        self._plot.set_title('Graph')
-
-        # self._plot.set_xticks(dataframe['Date'])
-        self._plot.set_xlabel('Date')
-        self._plot.set_ylabel('Value', rotation=90)
-        
-        dates = [datetime.datetime.strptime(d, '%Y:%m:%d:%H') for d in dataframe['Date']]
-        self._plot.plot(dates, dataframe['Value'], label=f'{label} ({unit})', color=color)
-        self._plot.legend()
-        plt.gcf().autofmt_xdate()
-
-        self._graph_canvas.draw()
+            for df, attr, unit in data:
+                dates = [datetime.datetime.strptime(d, '%Y:%m:%d:%H') for d in df['Date']]
+                self._plot.plot(dates, df['Value'], label=f'{attr} ({unit})')
+            self._plot.legend()
+            plt.gcf().autofmt_xdate()
+            self._graph_canvas.draw()
 
     def get_interval(self):
         dates = []
@@ -133,21 +143,13 @@ class GraphPage(tk.Frame):
             return data, unit
         else:
             return None, None
+
     class ResizeCommand:
         def __init__(self, controller, size):
             self.controller = controller
             self.size = size
         def __call__(self):
             self.controller.set_size(self.size)
-
-    class LoadDataCommand:
-        def __init__(self, frame, data_name):
-            self.frame = frame
-            self.data_name = data_name
-        def __call__(self):
-            df, unit = self.frame.load_data(self.data_name)
-            if not (df is None):
-                self.frame.plot_data(df, self.data_name, unit)
 
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
