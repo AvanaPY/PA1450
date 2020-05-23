@@ -7,11 +7,17 @@ CSV_SEPARATOR = ';'
 WEATHER_DATA_PATH = './weatherdata'
 WEATHER_PAIRS = {
     'Air Temperature': ('airtemp.csv', 'C'),
+    'Dew temperature': ('dewtemp.csv', 'C'),
     'Precipitation': ('precip.csv', 'mm'),
-    'Air speed': ('airwind.csv', 'm/s')
+    'Humididty': ('humidity.csv', '%'),
+    'Pressure': ('pressure.csv', 'hPa'),
+    'View distance': ('view.csv', 'km'),
+    'Wind speed': ('windspeed.csv', 'm/s'),
+    'Wind direction': ('winddir.csv', 'radians'),
+    'Relative weather rating': ('current.csv', 'Rel')
 }
 
-def load_data(data):
+def pre_load_data(data):
     """
         Data: str of which data to load.
 
@@ -40,6 +46,9 @@ def load_data(data):
     df = df.rename(columns={df.columns[0]: 'Value'})
     return df, unit
 
+def load_data(data):
+    return preloaded_data[data]
+
 def get_interval(df: pd.DataFrame, min_time: datetime.datetime, max_time: datetime.datetime):
     """
         Takes a dataframe, and two time periods and returns a new dataframe that contains data from the original dataframe that satisfies the time interval.
@@ -48,3 +57,8 @@ def get_interval(df: pd.DataFrame, min_time: datetime.datetime, max_time: dateti
     m = df.loc[(df['Timestamp'] >= min_time.timestamp()) & (df['Timestamp'] <= max_time.timestamp())]  #
     m = m.reset_index(drop=True)
     return m
+
+preloaded_data = {}
+for attr, (f, unit) in WEATHER_PAIRS.items():
+    data, unit = pre_load_data(attr)
+    preloaded_data[attr] = (data, unit)

@@ -66,11 +66,12 @@ class GraphPage(tk.Frame):
             tk.Label(time_frame, text=t, bg='White', font=MEDIUM_FONT).pack(side=tk.TOP)
 
             entry = DateEntry(time_frame, locale='en_GB', year=2020, month=1, day=1)
+            entry.bind('<<DateEntrySelected>>', lambda a:self.graph())
             entry.pack(side=tk.LEFT, expand=True)
 
             variable = tk.StringVar(time_frame)
             variable.set(0)
-            hour_dropdown = tk.OptionMenu(time_frame, variable, *list(range(0, 24)))
+            hour_dropdown = tk.OptionMenu(time_frame, variable, *list(range(0, 24)), command=lambda a:self.graph())
             hour_dropdown.pack(side=tk.LEFT, expand=True)
 
             self._interval.append((entry, variable))
@@ -83,18 +84,18 @@ class GraphPage(tk.Frame):
 
         self._attribute_boxes = {}
         _attributes = tk.Frame(self, bg='white')
+        tk.Label(_attributes, text='Select attributes', font=MEDIUM_FONT, bg='white').pack(side=tk.TOP, fill=tk.X)
         for attribute in data_manager.WEATHER_PAIRS:
             variable = tk.StringVar(_attributes)
             variable.set('0')
             chckbtn = tk.Checkbutton(_attributes, text=attribute, variable=variable, bg='white',
-                                    anchor=tk.W, highlightbackground="red", highlightcolor="red", highlightthickness=1)
-            chckbtn.pack(side=tk.TOP, anchor=tk.W, fill=tk.X, expand=True)
+                                    anchor=tk.W, highlightbackground="red", highlightcolor="red", highlightthickness=1,
+                                    command=self.graph)
+            chckbtn.pack(side=tk.TOP, anchor=tk.W, fill=tk.X)
 
             self._attribute_boxes[attribute] = variable
 
-        _graph_button = tk.Button(self, text='Graph it', command=self.graph, width=45, height=2)
-        _graph_button.pack(side=tk.TOP)
-        _attributes.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.W, expand=False)
+        _attributes.pack(side=tk.LEFT, anchor=tk.W, expand=False)
 
         self._figure = Figure(figsize=(5, 5), dpi=100)
         self._plot = self._figure.add_subplot(111)
@@ -110,9 +111,8 @@ class GraphPage(tk.Frame):
                 d, u = data_manager.load_data(attr)
                 d = data_manager.get_interval(d, interval[0], interval[1])
                 data.append((d, attr, u))
+        self._plot.clear()
         if data:
-            self._plot.clear()
-
             self._plot.set_xlabel('Date')
             self._plot.set_ylabel('Value', rotation=90)
 
