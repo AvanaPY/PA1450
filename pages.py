@@ -5,10 +5,16 @@ from matplotlib.figure import Figure
 from matplotlib import animation as animation
 import matplotlib.pyplot as plt
 
+plt.gca().xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y:%m:%d:%H'))
+plt.gca().xaxis.set_major_locator(matplotlib.dates.HourLocator())
+
 from matplotlib import style
 style.use('ggplot')
 
 import tkinter as tk
+
+from tkcalendar import Calendar, DateEntry
+
 import data_manager
 import datetime
 import math
@@ -54,32 +60,79 @@ class GraphPage(tk.Frame):
         label = tk.Label(self, text='Graphing data', bg='white', font=BIG_FONT)
         label.pack()
 
+        # Interval
+        
+        interval_frame = tk.Frame(self, bg='white')
+        label = tk.Label(interval_frame, text='Interval', bg='white', font=MEDIUM_FONT)
+        label.pack(side=tk.TOP)
+
+        self._interval = []
+        for t in ('Start', 'End'):
+            time_frame = tk.Frame(interval_frame, bg='white')
+
+            tk.Label(time_frame, text=t, bg='White', font=MEDIUM_FONT).pack(side=tk.TOP)
+
+            entry = DateEntry(time_frame, locale='en_GB', year=2020, month=1, day=1)
+            entry.pack(side=tk.LEFT, expand=True)
+
+            variable = tk.StringVar(time_frame)
+            variable.set(0)
+            hour_dropdown = tk.OptionMenu(time_frame, variable, *list(range(0, 24)))
+            hour_dropdown.pack(side=tk.LEFT, expand=True)
+
+            self._interval.append((entry, variable))
+
+            time_frame.pack(side=tk.LEFT, expand=False, padx=10)
+
+        interval_frame.pack(side=tk.TOP, expand=False, pady=20)
+
+        graph_frame = tk.Frame(self, bg='white')
+
         self._figure = Figure(figsize=(5, 5), dpi=100)
         self._plot = self._figure.add_subplot(111)
+        self._plot.set_title('Graph')
 
-        self._graph_canvas = FigureCanvasTkAgg(self._figure, self)
-        self._graph_canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self._graph_canvas = FigureCanvasTkAgg(self._figure, graph_frame)
+        self._graph_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        graph_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
 
     def plot_data(self, dataframe, label, unit, color='red'):
 
         count = dataframe.shape[0]
-        self._plot.set_title(f'Plotting {label} ({unit})')
-        
         self._plot.clear()
-        self._plot.set_xlabel('Time')
-        self._plot.set_xticks([])
+        self._plot.set_title('Graph')
+
+        # self._plot.set_xticks(dataframe['Date'])
+        self._plot.set_xlabel('Date')
         self._plot.set_ylabel('Value', rotation=90)
-        self._plot.plot(range(count), dataframe['Value'], label=f'{label} ({unit})', color=color)
+        
+        dates = [datetime.datetime.strptime(d, '%Y:%m:%d:%H') for d in dataframe['Date']]
+        self._plot.plot(dates, dataframe['Value'], label=f'{label} ({unit})', color=color)
         self._plot.legend()
+        plt.gcf().autofmt_xdate()
 
         self._graph_canvas.draw()
 
-    def load_data(self, data_name, min_date=None, max_date=None):
-        data, unit = data_manager.load_data(data_name)
-        if min_date or max_date:
-            data = data_manager.get_interval(data, min_date, max_date)
-        return data, unit
+    def get_interval(self):
+        dates = []
+        for entr, hour in self._interval:
+            date = entr.get_date()
+            hour = hour.get()
 
+            dt = datetime.datetime(date.year, date.month, date.day, int(hour))
+            
+            dates.append(dt)
+        return dates
+
+    def load_data(self, data_name):
+        min_date, max_date = self.get_interval()
+        if min_date.timestamp() < max_date.timestamp():
+            data, unit = data_manager.load_data(data_name)
+            data = data_manager.get_interval(data, min_date, max_date)
+            return data, unit
+        else:
+            return None, None
     class ResizeCommand:
         def __init__(self, controller, size):
             self.controller = controller
@@ -93,7 +146,8 @@ class GraphPage(tk.Frame):
             self.data_name = data_name
         def __call__(self):
             df, unit = self.frame.load_data(self.data_name)
-            self.frame.plot_data(df, self.data_name, unit)
+            if not (df is None):
+                self.frame.plot_data(df, self.data_name, unit)
 
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):

@@ -6,9 +6,9 @@ CSV_SEPARATOR = ';'
 
 WEATHER_DATA_PATH = './weatherdata'
 WEATHER_PAIRS = {
-    'airtemp': ('airtemp.csv', 'C'),
-    'precip': ('precip.csv', 'mm'),
-    'airwind': ('airwind.csv', 'm/s')
+    'Air Temperature': ('airtemp.csv', 'C'),
+    'Precipitation': ('precip.csv', 'mm'),
+    'Air speed': ('airwind.csv', 'm/s')
 }
 
 def load_data(data):
@@ -21,37 +21,32 @@ def load_data(data):
     path = f'{WEATHER_DATA_PATH}/{f}'
     df = pd.read_csv(path, sep=CSV_SEPARATOR)
     
-    df[['Year', 'Month', 'Day']] = df['Datum'].str.split('-', expand=True)
-
     # Create a bunch of new columns with appropriate data and apply a function that turns the data into integer formats
+    df[['Year', 'Month', 'Day']] = df['Datum'].str.split('-', expand=True)
     df['Year']  = df['Year'].map(lambda a: int(a))
     df['Month'] = df['Month'].map(lambda a: int(a))
     df['Day']   = df['Day'].map(lambda a: int(a))
-    df['Hour'] = df['Tid (UTC)'].map(lambda a: int(a.split(':')[0]))
+    df['Hour']  = df['Tid (UTC)'].map(lambda a: int(a.split(':')[0]))
     
-    # Advanced line of code that takes all the columns Year, Month, Day, and Hour and aggregates them into one single separate column called "Whole"
+    # Advanced line of code that takes all the columns Year, Month, Day, and Hour and aggregates them into one single separate column called "Timestamp"
     # It turns the Year, Month, Day, and Hour data into a timestamp using the datetime library for easy comparison between different times
     # Making finding interval data very simple
-    df['Whole'] = df[['Year', 'Month', 'Day', 'Hour']].agg(lambda a: datetime.datetime(*a).timestamp(), axis=1)
-    df['Date']  = df[['Year', 'Month', 'Day', 'Hour']].agg(lambda a: ':'.join([str(v) for v in a]), axis=1)
+    df['Timestamp'] = df[['Year', 'Month', 'Day', 'Hour']].agg(lambda a: datetime.datetime(*a).timestamp(), axis=1)
+    df['Date']      = df[['Year', 'Month', 'Day', 'Hour']].agg(lambda a: ':'.join([str(v) for v in a]), axis=1)
     # Drop the labels we aren't going to use
     df = df.drop(labels=['Tid (UTC)', 'Datum'], axis=1)
     df = df.rename(columns={df.columns[0]: 'Value'})
 
     # Reorganize the labels, the first label in the dataframe with dropped labels will be the "value" we are looking for
     # This is most likely a temporary step as it won't matter later on when we visualize the data as a graph
-    df = df[['Year', 'Month', 'Day', 'Hour', 'Date', 'Whole', df.columns[0]]]
+    df = df[['Year', 'Month', 'Day', 'Hour', 'Date', 'Timestamp', df.columns[0]]]
     return df, unit
 
 def get_interval(df: pd.DataFrame, min_time: datetime.datetime, max_time: datetime.datetime):
     """
         Takes a dataframe, and two time periods and returns a new dataframe that contains data from the original dataframe that satisfies the time interval.
     """
-    # min_day = f'{min_date.year}-{min_date.month:02d}-{min_date.day:02d}'
-    # max_day = f'{max_date.year}-{max_date.month:02d}-{max_date.day:02d}'
-    # min_hr = min_date.hour
-    # max_hr = max_date.hour
     # A very advanced expression to finding all the rows that satisfies the given interval
-    m = df.loc[(df['Whole'] >= min_time.timestamp()) & (df['Whole'] <= max_time.timestamp())]  #
+    m = df.loc[(df['Timestamp'] >= min_time.timestamp()) & (df['Timestamp'] <= max_time.timestamp())]  #
     m = m.reset_index(drop=True)
     return m

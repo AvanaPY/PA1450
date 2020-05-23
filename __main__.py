@@ -1,6 +1,6 @@
 import tkinter as tk
 from pages import PAGES, START_FRAME, DEFAULT_SIZE
-
+import sys
 class Root(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__('Online Weather by Group 12', *args, **kwargs)
@@ -21,6 +21,11 @@ class Root(tk.Tk):
             self._frames[F] = frame
             
         self.set_frame(START_FRAME)
+
+        def on_close():
+            sys.exit()
+
+        self.protocol('WM_DELETE_WINDOW', on_close)
 
     def client_exit(self):
         self.quit()
