@@ -60,12 +60,12 @@ class GraphPage(tk.Frame):
         label.pack(side=tk.TOP)
 
         self._interval = []
-        for t in ('Start', 'End'):
+        for t, (year, month, day) in zip(('Start', 'End'), ((2020, 1, 14), (2020, 1, 26))):
             time_frame = tk.Frame(interval_frame, bg='white')
 
             tk.Label(time_frame, text=t, bg='White', font=MEDIUM_FONT).pack(side=tk.TOP)
 
-            entry = DateEntry(time_frame, locale='en_GB', year=2020, month=1, day=1)
+            entry = DateEntry(time_frame, locale='en_GB', year=year, month=month, day=day)
             entry.bind('<<DateEntrySelected>>', lambda a:self.graph())
             entry.pack(side=tk.LEFT, expand=True)
 
@@ -162,11 +162,11 @@ class StartPage(tk.Frame):
         label.pack(side=tk.TOP, fill=tk.BOTH, expand=False, pady=(2, 100))
 
         for name in ('Emil Karlström', 'Alexander Svensson', 'Dennis Kyrk', 'Adam Alrefai', 'Mahmoud Alsadi'):
-            label = tk.Label(self, text=name, bg='white', font=SMALL_FONT)
+            label = tk.Label(self, text=name, bg='white', font=MEDIUM_FONT)
             label.pack(side=tk.TOP, fill=tk.BOTH, expand=False)
 
-        btn = tk.Button(self, text='Next', bg='white', font=MEDIUM_FONT, command=lambda: controller.set_frame(GraphPage))
-        btn.pack(side=tk.BOTTOM, expand=False, pady=10)
+        btn = tk.Button(self, text='Next', bg='grey', font=MEDIUM_FONT, width=16, height=2, command=lambda: controller.set_frame(GraphPage))
+        btn.pack(side=tk.BOTTOM, expand=True, pady=10)
 
 START_FRAME = StartPage
 PAGES = (GraphPage, StartPage)
